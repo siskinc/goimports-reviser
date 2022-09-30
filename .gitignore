@@ -6,3 +6,4 @@ goimports-reviser
 bin
 
 
+.vscode/settings.json

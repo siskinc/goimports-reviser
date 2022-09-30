@@ -3,6 +3,8 @@ package reviser
 import (
 	"fmt"
 	"strings"
+
+	"golang.org/x/exp/slices"
 )
 
 // ImportsOrder represents the name of import order
@@ -54,6 +56,50 @@ func (o ImportsOrders) sortImportsByOrder(
 	}
 
 	return result[0], result[1], result[2], result[3]
+}
+
+var companyImportsOrder = ImportsOrders{CompanyImportsOrder, ProjectImportsOrder}
+
+func (o ImportsOrders) sortImportsByOrderV2(
+	std []string,
+	general []string,
+	company []string,
+	project []string,
+) []string {
+	var no ImportsOrders
+	if len(o) == 0 {
+		no = ImportsOrders{
+			StdImportsOrder,
+			CompanyImportsOrder,
+			ProjectImportsOrder,
+			GeneralImportsOrder,
+		}
+	} else {
+		no = o
+	}
+	var result []string
+	for i, group := range no {
+		// write blank line
+		if i != 0 {
+			if !(slices.Contains(companyImportsOrder, group) && slices.Contains(companyImportsOrder, no[i-1])) {
+				result = append(result, "")
+			}
+		}
+		var imports []string
+		switch group {
+		case StdImportsOrder:
+			imports = std
+		case GeneralImportsOrder:
+			imports = general
+		case CompanyImportsOrder:
+			imports = company
+		case ProjectImportsOrder:
+			imports = project
+		}
+		result = append(result, imports...)
+	}
+
+	return result
 }
 
 // StringToImportsOrders will convert string, like "std,general,company,project" to ImportsOrder array type.

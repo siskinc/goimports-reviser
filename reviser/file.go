@@ -239,8 +239,8 @@ func (f *SourceFile) fixImports(
 			},
 		)
 
-		one, two, three, four := f.importsOrders.sortImportsByOrder(stdImports, generalImports, projectLocalPkgs, projectImports)
-		dd.Specs = rebuildImports(dd.Tok, commentsMetadata, one, two, three, four)
+		result := f.importsOrders.sortImportsByOrderV2(stdImports, generalImports, projectLocalPkgs, projectImports)
+		dd.Specs = rebuildImportsV2(dd.Tok, commentsMetadata, result)
 	}
 
 	clearImportDocs(file, importsPositions)
@@ -256,8 +256,10 @@ func (f *SourceFile) fixImports(
 // to
 // -----
 // import (
-// 	"fmt"
+//
+//	"fmt"
 //	"io"
+//
 // )
 func hasMultipleImportDecls(f *ast.File) ([]ast.Decl, bool) {
 	importSpecs := make([]ast.Spec, 0, len(f.Imports))
@@ -398,6 +400,23 @@ func rebuildImports(
 	return specs
 }
 
+func rebuildImportsV2(
+	tok token.Token,
+	commentsMetadata map[string]*commentsMetadata,
+	result []string,
+) []ast.Spec {
+	var specs []ast.Spec
+	for _, imprt := range result {
+		value := importWithComment(imprt, commentsMetadata)
+		fmt.Println("value",value)
+		spec := &ast.ImportSpec{
+			Path: &ast.BasicLit{Value: value, Kind: tok},
+		}
+		specs = append(specs, spec)
+	}
+	return specs
+}
+
 func clearImportDocs(f *ast.File, importsPositions []*importPosition) {
 	importsComments := make([]*ast.CommentGroup, 0, len(f.Comments))
 
@@ -416,6 +435,9 @@ func clearImportDocs(f *ast.File, importsPositions []*importPosition) {
 }
 
 func importWithComment(imprt string, commentsMetadata map[string]*commentsMetadata) string {
+	if imprt == "" {
+		return ""
+	}
 	var comment string
 	commentGroup, ok := commentsMetadata[imprt]
 	if ok {
